@@ -1,31 +1,97 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="id">
 <head>
-<title>Koleksi</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Katalog Seni Pijar</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+        .katalog-item { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; cursor: pointer; display: flex; gap: 15px; align-items: center; }
+        .katalog-item img { width: 100px; height: 100px; object-fit: cover; }
+        .detail-box { background: #f9f9f9; padding: 10px; margin-top: 10px; display: none; border-left: 4px solid #0070f3; }
+        footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 0.9em; color: #555; }
+    </style>
 </head>
-
 <body>
 
-<h1>Aplikasi Koleksi</h1>
+    <h1>Katalog Koleksi Seni</h1>
+    <div id="katalog-container">Loading katalog...</div>
 
-<button onclick="loadData()">Ambil Data</button>
+    <footer>
+        <h3>Fortune of the Day:</h3>
+        <p id="fortune-1">Loading Fortune 1...</p>
+        <p id="fortune-2">Loading Fortune 2...</p>
+    </footer>
 
-<div id="hasil"></div>
+    <script>
+        // 1. Fetch Daftar Katalog Saat Halaman Dimuat
+        async function loadKatalog() {
+            const container = document.getElementById('katalog-container');
+            try {
+                const res = await fetch('/api/get-koleksi');
+                const result = await res.json();
+                container.innerHTML = `<p><i>(Data Source: ${result.source})</i></p>`; // Tampilkan sumber data (Supabase/Redis)
 
-<script>
+                result.data.forEach(item => {   
+                    // Buat elemen item
+                    const div = document.createElement('div');
+                    div.className = 'katalog-item';
+                    div.innerHTML = `
+                        <img src="${item.path}" alt="${item.judul}">
+                        <div>
+                            <h3>${item.judul}</h3>
+                            <div class="detail-box" id="detail-${item.id}"></div>
+                        </div>
+                    `;
+                    // Tambahkan event click untuk buka detail
+                    div.onclick = () => loadDetail(item.id);
+                    container.appendChild(div);
+                });
+            } catch (error) {
+                container.innerHTML = "Gagal memuat katalog.";
+            }
+        }
 
-async function loadData(){
+        // 2. Fetch Detail Saat Item Diklik
+        async function loadDetail(id) {
+            const detailBox = document.getElementById(`detail-${id}`);
+            // Toggle visibility (Buka/Tutup)
+            if (detailBox.style.display === 'block') {
+                detailBox.style.display = 'none';
+                return;
+            }
 
- const res = await fetch("/api/get-koleksi");
- const data = await res.json();
+            detailBox.style.display = 'block';
+            detailBox.innerHTML = "<i>Loading detail...</i>";
 
- document.getElementById("hasil").innerHTML =
- JSON.stringify(data);
+            try {
+                const res = await fetch(`/api/get-detail?id=${id}`);
+                const result = await res.json();
+                const d = result.data;
+                detailBox.innerHTML = `
+                    <p><strong>Pencipta:</strong> ${d.pencipta}</p>
+                    <p><strong>Tahun:</strong> ${d.tahun}</p>
+                    <p><strong>Harga:</strong> Rp ${d.harga}</p>
+                    <p><i>(Detail Source: ${result.source})</i></p>
+                `;
+            } catch (error) {
+                detailBox.innerHTML = "Gagal memuat detail.";
+            }
+        }
 
-}
+        // 3. Fetch Fortune di Footer
+        async function loadFortunes() {
+            fetch('/api/fortune').then(r => r.json()).then(data => {
+                document.getElementById('fortune-1').innerText = `${data.source}: ${data.fortune}`;
+            });
+            fetch('/api/fortune-edge').then(r => r.json()).then(data => {
+                document.getElementById('fortune-2').innerText = `${data.source}: ${data.fortune}`;
+            });
+        }
 
-</script>
-
+        // Jalankan semua fungsi saat pertama kali muat
+        loadKatalog();
+        loadFortunes();
+    </script>
 </body>
 </html>
