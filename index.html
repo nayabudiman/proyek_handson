@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Koleksi</title>
+</head>
+
+<body>
+
+<h1>Aplikasi Koleksi</h1>
+
+<button onclick="loadData()">Ambil Data</button>
+
+<div id="hasil"></div>
+
+<script>
+
+async function loadData(){
+
+ const res = await fetch("/api/get-koleksi");
+ const data = await res.json();
+
+ document.getElementById("hasil").innerHTML =
+ JSON.stringify(data);
+
+}
+
+</script>
+
+</body>
+</html>
